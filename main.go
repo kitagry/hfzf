@@ -1,36 +1,128 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"os"
+	"strings"
+
+	"github.com/gdamore/tcell"
 
 	"gopkg.in/yaml.v2"
 )
 
 var (
-	text      string = "aiueo"
-	threshold int    = len([]rune(text))
+	text    = ""
+	row     = 0
+	mapData map[interface{}]interface{}
+
+	style = tcell.StyleDefault
 )
 
 func main() {
-	decoder := yaml.NewDecoder(os.Stdin)
-	m := make(map[interface{}]interface{})
-	err := decoder.Decode(&m)
+	s, err := tcell.NewScreen()
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	data := fuzzyFind(text, m)
 
-	encoder := yaml.NewEncoder(os.Stdout)
-	err = encoder.Encode(data)
+	if err = s.Init(); err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	s.SetStyle(tcell.StyleDefault.
+		Foreground(tcell.ColorWhite).
+		Background(tcell.ColorBlack))
+	s.Clear()
+
+	quit := make(chan struct{})
+
+	decoder := yaml.NewDecoder(os.Stdin)
+	err = decoder.Decode(&mapData)
 	if err != nil {
 		fmt.Println(err)
 		return
+	}
+
+	s.Show()
+
+	data := fuzzyFind(text, mapData)
+
+	s.Show()
+	output(s, data)
+
+	go func() {
+		for {
+			ev := s.PollEvent()
+			switch ev := ev.(type) {
+			case *tcell.EventKey:
+				switch ev.Key() {
+				case tcell.KeyEscape, tcell.KeyEnter:
+					close(quit)
+					return
+				case tcell.KeyCtrlL:
+					s.Sync()
+				case tcell.KeyDelete, tcell.KeyBackspace, tcell.KeyBackspace2:
+					textRune := []rune(text)
+					if len(textRune) != 0 {
+						textRune = textRune[0 : len(textRune)-1]
+						text = string(textRune)
+					}
+				case tcell.KeyRune:
+					text += string(ev.Rune())
+				}
+				data := fuzzyFind(text, mapData)
+				s.Clear()
+				s.Sync()
+				output(s, data)
+				s.Show()
+			case *tcell.EventResize:
+				s.Sync()
+			}
+		}
+	}()
+
+	<-quit
+
+	s.Fini()
+}
+
+func output(s tcell.Screen, data map[interface{}]interface{}) {
+	putln(s, "> "+text)
+	buffer := new(bytes.Buffer)
+	encoder := yaml.NewEncoder(buffer)
+	err := encoder.Encode(data)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	str := buffer.String()
+	strs := strings.Split(str, "\n")
+	for _, el := range strs {
+		putln(s, el)
+	}
+	row = 0
+}
+
+func putln(s tcell.Screen, str string) {
+	puts(s, style, 1, row, str)
+	row++
+}
+
+func puts(s tcell.Screen, style tcell.Style, x, y int, str string) {
+	st := []rune(str)
+	if len(st) > 0 {
+		s.SetContent(x, y, st[0], st[1:], style)
+	} else {
+		s.SetContent(x, y, []rune(" ")[0], []rune(""), style)
 	}
 }
 
 func fuzzyFind(keyword string, data map[interface{}]interface{}) map[interface{}]interface{} {
+	threshold := len([]rune(text))
+
 	result := make(map[interface{}]interface{})
 	for k, value := range data {
 		if smithWaterman(k.(string), keyword) >= threshold {
@@ -46,15 +138,15 @@ func fuzzyFind(keyword string, data map[interface{}]interface{}) map[interface{}
 			}
 		case []interface{}:
 			// fmt.Println(v, "is []interface{} type")
-			var tmpData []string
+			var tmpData []interface{}
 			for _, el := range v {
 				if smithWaterman(el.(string), keyword) >= threshold {
-					tmpData = append(tmpData, el.(string))
+					tmpData = append(tmpData, el)
 				}
 			}
 
 			if len(tmpData) != 0 {
-				result[k] = v
+				result[k] = tmpData
 			}
 		case map[interface{}]interface{}:
 			// fmt.Println(v, "is map[interface{}]interface{} type")
@@ -72,7 +164,7 @@ func fuzzyFind(keyword string, data map[interface{}]interface{}) map[interface{}
 func smithWaterman(s1, s2 string) int {
 	s1Rune := []rune(s1)
 	s2Rune := []rune(s2)
-	gap := 1
+	gap := 0
 	match := 1
 	mismatch := 1
 
