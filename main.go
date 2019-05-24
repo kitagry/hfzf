@@ -20,6 +20,26 @@ var (
 )
 
 func main() {
+  var decoder *yaml.Decoder
+  if len(os.Args) >= 2 {
+    file, err := os.Open(os.Args[1])
+    if err != nil {
+      fmt.Println(err)
+      return
+    }
+    defer file.Close()
+
+    decoder = yaml.NewDecoder(file)
+  } else {
+    decoder = yaml.NewDecoder(os.Stdin)
+  }
+
+  err := decoder.Decode(&mapData)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
 	s, err := tcell.NewScreen()
 	if err != nil {
 		fmt.Println(err)
@@ -37,13 +57,6 @@ func main() {
 	s.Clear()
 
 	quit := make(chan struct{})
-
-	decoder := yaml.NewDecoder(os.Stdin)
-	err = decoder.Decode(&mapData)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
 
 	s.Show()
 
