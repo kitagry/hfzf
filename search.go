@@ -7,20 +7,20 @@ func fuzzyFind(keyword string, data map[interface{}]interface{}) map[interface{}
 
 	result := make(map[interface{}]interface{})
 	for k, value := range data {
-		if smithWaterman(k.(string), keyword) >= threshold {
+		if wordsScore(k.(string), keyword) >= threshold {
 			result[k] = value
 			continue
 		}
 
 		switch v := value.(type) {
 		case string:
-			if smithWaterman(v, keyword) >= threshold {
+			if wordsScore(v, keyword) >= threshold {
 				result[k] = v
 			}
 		case []interface{}:
 			var tmpData []interface{}
 			for _, el := range v {
-				if smithWaterman(el.(string), keyword) >= threshold {
+				if wordsScore(el.(string), keyword) >= threshold {
 					tmpData = append(tmpData, el)
 				}
 			}
@@ -40,14 +40,48 @@ func fuzzyFind(keyword string, data map[interface{}]interface{}) map[interface{}
 	return result
 }
 
-func smithWaterman(s1, s2 string) int {
+func wordsScore(s1, s2 string) int {
+	matrix, maxI, maxJ := smithWaterman(s1, s2)
+	return matrix[maxI][maxJ]
+}
+
+func pointPlace(s1, s2 string) []int {
+	place := make([]int, 0)
+	matrix, i, j := smithWaterman(s1, s2)
+	if matrix[i][j] < len([]rune(s2)) {
+		return place
+	}
+
+	for i > 0 {
+		if matrix[i][j] == matrix[i-1][j] {
+			i -= 1
+		} else if matrix[i][j] == matrix[i][j-1] {
+			j -= 1
+		} else if matrix[i][j] == matrix[i-1][j-1]+1 {
+			i -= 1
+			j -= 1
+			place = append([]int{i}, place...)
+		} else {
+			i -= 1
+			j -= 1
+		}
+
+		if matrix[i][j] == 0 {
+			break
+		}
+	}
+
+	return place
+}
+
+func smithWaterman(s1, s2 string) (matrix [][]int, maxI, maxJ int) {
 	s1Rune := []rune(s1)
 	s2Rune := []rune(s2)
 	gap := 0
 	match := 1
 	mismatch := 1
 
-	matrix := make([][]int, len(s1Rune)+1)
+	matrix = make([][]int, len(s1Rune)+1)
 	for i := 0; i < len(s1Rune)+1; i++ {
 		matrix[i] = make([]int, len(s2Rune)+1)
 	}
@@ -64,11 +98,14 @@ func smithWaterman(s1, s2 string) int {
 			}
 
 			matrix[i][j] = max(s1Gap, s2Gap, match, 0)
-			maxScore = max(maxScore, matrix[i][j])
+			if maxScore < matrix[i][j] {
+				maxI = i
+				maxJ = j
+				maxScore = matrix[i][j]
+			}
 		}
 	}
-
-	return maxScore
+	return
 }
 
 func max(s ...int) int {
@@ -79,4 +116,13 @@ func max(s ...int) int {
 		}
 	}
 	return maxInt
+}
+
+func in(el int, array []int) bool {
+	for _, ar := range array {
+		if ar == el {
+			return true
+		}
+	}
+	return false
 }

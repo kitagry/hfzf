@@ -122,10 +122,14 @@ func putln(s tcell.Screen, str string) {
 }
 
 func puts(s tcell.Screen, style tcell.Style, x, y int, str string) {
-	st := []rune(str)
-	if len(st) > 0 {
-		s.SetContent(x, y, st[0], st[1:], style)
-	} else {
-		s.SetContent(x, y, []rune(" ")[0], []rune(""), style)
+	places := pointPlace(str, text)
+	stRunes := []rune(str)
+	for i, sr := range stRunes {
+		if in(i, places) {
+			s.SetContent(x, y, sr, []rune(""), style.Foreground(tcell.Color100))
+		} else {
+			s.SetContent(x, y, sr, []rune(""), style)
+		}
+		x++
 	}
 }
