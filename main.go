@@ -130,6 +130,12 @@ func puts(s tcell.Screen, style tcell.Style, x, y int, str string) {
 		} else {
 			s.SetContent(x, y, sr, []rune(""), style)
 		}
-		x++
+
+		bsr := []byte(string(sr))
+		if len(bsr) > 1 {
+			x += 2
+		} else {
+			x++
+		}
 	}
 }
