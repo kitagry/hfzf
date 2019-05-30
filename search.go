@@ -2,7 +2,7 @@ package main
 
 import "log"
 
-func fuzzyFind(keyword string, data interface{}) interface{} {
+func FuzzyFind(keyword string, data interface{}) interface{} {
 	threshold := len([]rune(keyword))
 
 	switch d := data.(type) {
@@ -14,7 +14,7 @@ func fuzzyFind(keyword string, data interface{}) interface{} {
 				continue
 			}
 
-			tmp := fuzzyFind(keyword, value)
+			tmp := FuzzyFind(keyword, value)
 			if tmp != nil {
 				result[k] = tmp
 			}
@@ -36,7 +36,7 @@ func fuzzyFind(keyword string, data interface{}) interface{} {
 					tmpData = append(tmpData, eld)
 				}
 			case map[interface{}]interface{}:
-				tmp := fuzzyFind(keyword, eld)
+				tmp := FuzzyFind(keyword, eld)
 				if tmp != nil {
 					tmpData = append(tmpData, tmp)
 				}
@@ -57,7 +57,7 @@ func wordsScore(s1, s2 string) int {
 	return matrix[maxI][maxJ]
 }
 
-func pointPlace(s1, s2 string) []int {
+func PointPlace(s1, s2 string) []int {
 	place := make([]int, 0)
 	matrix, i, j := smithWaterman(s1, s2)
 	if matrix[i][j] < len([]rune(s2)) {
@@ -66,16 +66,16 @@ func pointPlace(s1, s2 string) []int {
 
 	for i > 0 {
 		if matrix[i][j] == matrix[i-1][j] {
-			i -= 1
+			i--
 		} else if matrix[i][j] == matrix[i][j-1] {
-			j -= 1
+			j--
 		} else if matrix[i][j] == matrix[i-1][j-1]+1 {
-			i -= 1
-			j -= 1
+			i--
+			j--
 			place = append([]int{i}, place...)
 		} else {
-			i -= 1
-			j -= 1
+			i--
+			j--
 		}
 
 		if matrix[i][j] == 0 {

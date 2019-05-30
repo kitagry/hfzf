@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"strings"
 
 	"github.com/gdamore/tcell"
 
@@ -14,10 +13,7 @@ import (
 
 var (
 	text    = ""
-	row     = 0
 	mapData interface{}
-
-	style = tcell.StyleDefault
 )
 
 func main() {
@@ -57,34 +53,29 @@ func main() {
 	}
 	mapData = interfaceDatas
 
-	s, err := tcell.NewScreen()
+	t, err := NewTerminal()
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	if err = s.Init(); err != nil {
+	if err = t.Init(); err != nil {
 		log.Println(err)
 		return
 	}
 
-	s.SetStyle(tcell.StyleDefault.
-		Foreground(tcell.ColorWhite).
-		Background(tcell.ColorBlack))
-	s.Clear()
-
 	quit := make(chan struct{})
 
-	s.Show()
+	t.Show()
 
-	data := fuzzyFind(text, mapData)
+	data := FuzzyFind(text, mapData)
 
-	s.Show()
-	output(s, data)
+	t.Show()
+	t.Output(text, data)
 
 	go func() {
 		for {
-			ev := s.PollEvent()
+			ev := t.PollEvent()
 			switch ev := ev.(type) {
 			case *tcell.EventKey:
 				switch ev.Key() {
@@ -100,69 +91,17 @@ func main() {
 				case tcell.KeyRune:
 					text += string(ev.Rune())
 				}
-				data := fuzzyFind(text, mapData)
-				s.Clear()
-				output(s, data)
-				s.Sync()
+				data := FuzzyFind(text, mapData)
+				t.Clear()
+				t.Output(text, data)
+				t.Sync()
 			case *tcell.EventResize:
-				s.Sync()
+				t.Sync()
 			}
 		}
 	}()
 
 	<-quit
 
-	s.Fini()
-}
-
-func output(s tcell.Screen, data interface{}) {
-	putln(s, "> "+text)
-	switch da := data.(type) {
-	case []interface{}:
-		for i, das := range da {
-			buffer := new(bytes.Buffer)
-			encoder := yaml.NewEncoder(buffer)
-			err := encoder.Encode(das)
-			if err != nil {
-				log.Println(err)
-				return
-			}
-
-			str := buffer.String()
-			strs := strings.Split(str, "\n")
-			strs = strs[:len(strs)-1]
-			for _, el := range strs {
-				putln(s, el)
-			}
-
-			if i != len(da)-1 {
-				putln(s, "---")
-			}
-		}
-	}
-	row = 0
-}
-
-func putln(s tcell.Screen, str string) {
-	puts(s, style, 1, row, str)
-	row++
-}
-
-func puts(s tcell.Screen, style tcell.Style, x, y int, str string) {
-	places := pointPlace(str, text)
-	stRunes := []rune(str)
-	for i, sr := range stRunes {
-		if in(i, places) {
-			s.SetContent(x, y, sr, []rune(""), style.Foreground(tcell.Color100))
-		} else {
-			s.SetContent(x, y, sr, []rune(""), style)
-		}
-
-		bsr := []byte(string(sr))
-		if len(bsr) > 1 {
-			x += 2
-		} else {
-			x++
-		}
-	}
+	t.Fini()
 }
