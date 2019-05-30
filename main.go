@@ -91,7 +91,7 @@ func main() {
 				case tcell.KeyRune:
 					text += string(ev.Rune())
 				}
-				data := FuzzyFind(text, mapData)
+				data = FuzzyFind(text, mapData)
 				t.Clear()
 				t.Output(text, data)
 				t.Sync()
@@ -104,4 +104,10 @@ func main() {
 	<-quit
 
 	t.Fini()
+
+	encoder := yaml.NewEncoder(os.Stdout)
+	err = encoder.Encode(data)
+	if err != nil {
+		log.Println(err)
+	}
 }
