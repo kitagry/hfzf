@@ -108,3 +108,12 @@ func (t *Terminal) puts(x, y int, str string) {
 		}
 	}
 }
+
+func in(el int, array []int) bool {
+	for _, ar := range array {
+		if ar == el {
+			return true
+		}
+	}
+	return false
+}

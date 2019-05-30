@@ -129,12 +129,3 @@ func max(s ...int) int {
 	}
 	return maxInt
 }
-
-func in(el int, array []int) bool {
-	for _, ar := range array {
-		if ar == el {
-			return true
-		}
-	}
-	return false
-}
