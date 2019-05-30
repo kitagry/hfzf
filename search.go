@@ -2,42 +2,54 @@ package main
 
 import "log"
 
-func fuzzyFind(keyword string, data map[interface{}]interface{}) map[interface{}]interface{} {
-	threshold := len([]rune(text))
+func fuzzyFind(keyword string, data interface{}) interface{} {
+	threshold := len([]rune(keyword))
 
-	result := make(map[interface{}]interface{})
-	for k, value := range data {
-		if wordsScore(k.(string), keyword) >= threshold {
-			result[k] = value
-			continue
-		}
-
-		switch v := value.(type) {
-		case string:
-			if wordsScore(v, keyword) >= threshold {
-				result[k] = v
-			}
-		case []interface{}:
-			var tmpData []interface{}
-			for _, el := range v {
-				if wordsScore(el.(string), keyword) >= threshold {
-					tmpData = append(tmpData, el)
-				}
+	switch d := data.(type) {
+	case map[interface{}]interface{}:
+		result := make(map[interface{}]interface{})
+		for k, value := range d {
+			if wordsScore(k.(string), keyword) >= threshold {
+				result[k] = value
+				continue
 			}
 
-			if len(tmpData) != 0 {
-				result[k] = tmpData
-			}
-		case map[interface{}]interface{}:
-			tmp := fuzzyFind(keyword, v)
-			if len(tmp) != 0 {
+			tmp := fuzzyFind(keyword, value)
+			if tmp != nil {
 				result[k] = tmp
 			}
-		default:
-			log.Println(v)
 		}
+
+		if len(result) > 0 {
+			return result
+		}
+	case string:
+		if wordsScore(d, keyword) >= threshold {
+			return d
+		}
+	case []interface{}:
+		var tmpData []interface{}
+		for _, el := range d {
+			switch eld := el.(type) {
+			case string:
+				if wordsScore(eld, keyword) >= threshold {
+					tmpData = append(tmpData, eld)
+				}
+			case map[interface{}]interface{}:
+				tmp := fuzzyFind(keyword, eld)
+				if tmp != nil {
+					tmpData = append(tmpData, tmp)
+				}
+			}
+		}
+
+		if len(tmpData) > 0 {
+			return tmpData
+		}
+	default:
+		log.Println(d)
 	}
-	return result
+	return nil
 }
 
 func wordsScore(s1, s2 string) int {

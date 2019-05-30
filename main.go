@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -14,13 +15,13 @@ import (
 var (
 	text    = ""
 	row     = 0
-	mapData map[interface{}]interface{}
+	mapData interface{}
 
 	style = tcell.StyleDefault
 )
 
 func main() {
-	var decoder *yaml.Decoder
+	var byteData []byte
 	if len(os.Args) >= 2 {
 		file, err := os.Open(os.Args[1])
 		if err != nil {
@@ -29,16 +30,32 @@ func main() {
 		}
 		defer file.Close()
 
-		decoder = yaml.NewDecoder(file)
+		byteData, err = ioutil.ReadAll(file)
+		if err != nil {
+			log.Println(err)
+			return
+		}
 	} else {
-		decoder = yaml.NewDecoder(os.Stdin)
+		var err error
+		byteData, err = ioutil.ReadAll(os.Stdin)
+		if err != nil {
+			log.Println(err)
+			return
+		}
 	}
 
-	err := decoder.Decode(&mapData)
-	if err != nil {
-		log.Println(err)
-		return
+	byteDatas := bytes.Split(byteData, []byte("---\n"))
+	interfaceDatas := make([]interface{}, 0)
+	for _, d := range byteDatas {
+		var tmp interface{}
+		err := yaml.Unmarshal(d, &tmp)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		interfaceDatas = append(interfaceDatas, tmp)
 	}
+	mapData = interfaceDatas
 
 	s, err := tcell.NewScreen()
 	if err != nil {
@@ -98,20 +115,30 @@ func main() {
 	s.Fini()
 }
 
-func output(s tcell.Screen, data map[interface{}]interface{}) {
+func output(s tcell.Screen, data interface{}) {
 	putln(s, "> "+text)
-	buffer := new(bytes.Buffer)
-	encoder := yaml.NewEncoder(buffer)
-	err := encoder.Encode(data)
-	if err != nil {
-		log.Println(err)
-		return
-	}
+	switch da := data.(type) {
+	case []interface{}:
+		for i, das := range da {
+			buffer := new(bytes.Buffer)
+			encoder := yaml.NewEncoder(buffer)
+			err := encoder.Encode(das)
+			if err != nil {
+				log.Println(err)
+				return
+			}
 
-	str := buffer.String()
-	strs := strings.Split(str, "\n")
-	for _, el := range strs {
-		putln(s, el)
+			str := buffer.String()
+			strs := strings.Split(str, "\n")
+			strs = strs[:len(strs)-1]
+			for _, el := range strs {
+				putln(s, el)
+			}
+
+			if i != len(da)-1 {
+				putln(s, "---")
+			}
+		}
 	}
 	row = 0
 }
