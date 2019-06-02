@@ -56,13 +56,12 @@ func main() {
 	t, err := NewTerminal()
 	if err != nil {
 		log.Println(err)
-		t.Fini()
 		return
 	}
+	defer t.Fini()
 
 	if err = t.Init(); err != nil {
 		log.Println(err)
-		t.Fini()
 		return
 	}
 
@@ -108,8 +107,13 @@ func main() {
 	t.Fini()
 
 	encoder := yaml.NewEncoder(os.Stdout)
-	err = encoder.Encode(data)
-	if err != nil {
-		log.Println(err)
+	switch dat := data.(type) {
+	case []interface{}:
+		for _, d := range dat {
+			err = encoder.Encode(d)
+			if err != nil {
+				log.Println(err)
+			}
+		}
 	}
 }
