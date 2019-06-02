@@ -25,3 +25,7 @@ $ cat YOUR_YAML_FILE | hfzf
 ## ScreenShot
 
 ![hfzf gif](./hfzf.gif)
+
+## LICENSE
+
+MIT
