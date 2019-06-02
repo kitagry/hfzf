@@ -2,6 +2,8 @@ package main
 
 import "log"
 
+// FuzzyFind except data which is not near by keyword.
+// If parent data is near, the child data is not excepted.
 func FuzzyFind(keyword string, data interface{}) interface{} {
 	threshold := len([]rune(keyword))
 
@@ -57,6 +59,9 @@ func wordsScore(s1, s2 string) int {
 	return matrix[maxI][maxJ]
 }
 
+// PointPlace returns places of s1 which is same as s2.
+// For example s1 is "abcdef" and s2 is "ace",
+// then PointPlace returns [0, 2, 4].
 func PointPlace(s1, s2 string) []int {
 	place := make([]int, 0)
 	matrix, i, j := smithWaterman(s1, s2)

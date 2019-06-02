@@ -56,11 +56,13 @@ func main() {
 	t, err := NewTerminal()
 	if err != nil {
 		log.Println(err)
+		t.Fini()
 		return
 	}
 
 	if err = t.Init(); err != nil {
 		log.Println(err)
+		t.Fini()
 		return
 	}
 

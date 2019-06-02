@@ -58,7 +58,7 @@ func (t Terminal) PollEvent() tcell.Event {
 }
 
 func (t *Terminal) Output(text string, data interface{}) {
-	t.putln("> " + text)
+	t.putln("> "+text, []int{0}, tcell.ColorPurple)
 	switch da := data.(type) {
 	case []interface{}:
 		for i, das := range da {
@@ -74,28 +74,28 @@ func (t *Terminal) Output(text string, data interface{}) {
 			strs := strings.Split(str, "\n")
 			strs = strs[:len(strs)-1]
 			for _, el := range strs {
-				t.putln(el)
+				places := PointPlace(el, text)
+				t.putln(el, places, tcell.ColorLightGreen)
 			}
 
 			if i != len(da)-1 {
-				t.putln("---")
+				t.putln("---", []int{}, tcell.Color100)
 			}
 		}
 	}
 	t.row = 0
 }
 
-func (t *Terminal) putln(str string) {
-	t.puts(1, t.row, str)
+func (t *Terminal) putln(str string, highlightPlaces []int, color tcell.Color) {
+	t.puts(1, t.row, str, highlightPlaces, color)
 	t.row++
 }
 
-func (t *Terminal) puts(x, y int, str string) {
-	places := PointPlace(str, text)
+func (t *Terminal) puts(x, y int, str string, highlightPlaces []int, color tcell.Color) {
 	stRunes := []rune(str)
 	for i, sr := range stRunes {
-		if in(i, places) {
-			t.screen.SetContent(x, y, sr, []rune(""), t.style.Foreground(tcell.Color100))
+		if in(i, highlightPlaces) {
+			t.screen.SetContent(x, y, sr, []rune(""), t.style.Foreground(color))
 		} else {
 			t.screen.SetContent(x, y, sr, []rune(""), t.style)
 		}
