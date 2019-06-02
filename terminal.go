@@ -61,26 +61,23 @@ func (t *Terminal) Output(text string, data interface{}) {
 	t.putln("> "+text, []int{0}, tcell.ColorPurple)
 	switch da := data.(type) {
 	case []interface{}:
-		for i, das := range da {
-			buffer := new(bytes.Buffer)
-			encoder := yaml.NewEncoder(buffer)
+		buffer := new(bytes.Buffer)
+		encoder := yaml.NewEncoder(buffer)
+		for _, das := range da {
 			err := encoder.Encode(das)
 			if err != nil {
 				log.Println(err)
 				return
 			}
+		}
 
-			str := buffer.String()
-			strs := strings.Split(str, "\n")
-			strs = strs[:len(strs)-1]
-			for _, el := range strs {
-				places := PointPlace(el, text)
-				t.putln(el, places, tcell.ColorLightGreen)
-			}
+		str := buffer.String()
+		strs := strings.Split(str, "\n")
+		strs = strs[:len(strs)-1]
 
-			if i != len(da)-1 {
-				t.putln("---", []int{}, tcell.Color100)
-			}
+		for _, el := range strs {
+			places := PointPlace(el, text)
+			t.putln(el, places, tcell.ColorLightGreen)
 		}
 	}
 	t.row = 0
