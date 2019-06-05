@@ -9,10 +9,54 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+type Keyword struct {
+	Text        []rune
+	CursorPoint int
+}
+
+func NewKeyword() Keyword {
+	return Keyword{
+		Text:        []rune(""),
+		CursorPoint: 0,
+	}
+}
+
+func (k *Keyword) Input(t rune) {
+	if k.CursorPoint != len(k.Text) {
+		k.Text = append(k.Text[0:k.CursorPoint+1], k.Text[k.CursorPoint:len(k.Text)]...)
+		k.Text[k.CursorPoint] = t
+		k.CursorPoint++
+	} else {
+		k.Text = append(k.Text, t)
+		k.CursorPoint++
+	}
+}
+
+func (k *Keyword) Delete() {
+	if k.CursorPoint != 0 {
+		k.Text = append(k.Text[0:k.CursorPoint-1], k.Text[k.CursorPoint:len(k.Text)]...)
+		k.CursorPoint--
+	}
+}
+
+func (k *Keyword) MoveLeft() {
+	if k.CursorPoint > 0 {
+		k.CursorPoint--
+	}
+}
+
+func (k *Keyword) MoveRight() {
+	if k.CursorPoint < len(k.Text) {
+		k.CursorPoint++
+	}
+}
+
 type Terminal struct {
 	screen tcell.Screen
 	style  tcell.Style
-	row    int
+
+	Keyword Keyword
+	row     int
 }
 
 func NewTerminal() (Terminal, error) {
@@ -27,9 +71,10 @@ func NewTerminal() (Terminal, error) {
 	s.Clear()
 
 	return Terminal{
-		screen: s,
-		style:  tcell.StyleDefault,
-		row:    0,
+		screen:  s,
+		style:   tcell.StyleDefault,
+		Keyword: NewKeyword(),
+		row:     0,
 	}, nil
 }
 
@@ -57,8 +102,10 @@ func (t Terminal) PollEvent() tcell.Event {
 	return t.screen.PollEvent()
 }
 
-func (t *Terminal) Output(text string, data interface{}) {
-	t.putln("> "+text, []int{0}, tcell.ColorPurple)
+func (t *Terminal) Output(data interface{}) {
+	inputField := "> " + string(t.Keyword.Text)
+	t.putln(inputField, []int{0}, tcell.ColorPurple)
+	t.screen.ShowCursor(len([]rune("> "))+t.Keyword.CursorPoint+1, 0)
 	switch da := data.(type) {
 	case []interface{}:
 		buffer := new(bytes.Buffer)
@@ -76,7 +123,7 @@ func (t *Terminal) Output(text string, data interface{}) {
 		strs = strs[:len(strs)-1]
 
 		for _, el := range strs {
-			places := PointPlace(el, text)
+			places := PointPlace(el, string(t.Keyword.Text))
 			t.putln(el, places, tcell.ColorLightGreen)
 		}
 	}

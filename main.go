@@ -12,7 +12,6 @@ import (
 )
 
 var (
-	text    = ""
 	mapData interface{}
 )
 
@@ -69,10 +68,8 @@ func main() {
 
 	t.Show()
 
-	data := FuzzyFind(text, mapData)
-
-	t.Show()
-	t.Output(text, data)
+	data := FuzzyFind(string(t.Keyword.Text), mapData)
+	t.Output(data)
 
 	go func() {
 		for {
@@ -84,17 +81,17 @@ func main() {
 					close(quit)
 					return
 				case tcell.KeyDelete, tcell.KeyBackspace, tcell.KeyBackspace2:
-					textRune := []rune(text)
-					if len(textRune) != 0 {
-						textRune = textRune[0 : len(textRune)-1]
-						text = string(textRune)
-					}
+					t.Keyword.Delete()
+				case tcell.KeyLeft:
+					t.Keyword.MoveLeft()
+				case tcell.KeyRight:
+					t.Keyword.MoveRight()
 				case tcell.KeyRune:
-					text += string(ev.Rune())
+					t.Keyword.Input(ev.Rune())
 				}
-				data = FuzzyFind(text, mapData)
+				data = FuzzyFind(string(t.Keyword.Text), mapData)
 				t.Clear()
-				t.Output(text, data)
+				t.Output(data)
 				t.Sync()
 			case *tcell.EventResize:
 				t.Sync()
