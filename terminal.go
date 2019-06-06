@@ -153,6 +153,34 @@ func (t *Terminal) puts(x, y int, str string, highlightPlaces []int, color tcell
 	}
 }
 
+func (t *Terminal) SetKeymap(quit chan<- struct{}) {
+	for {
+		ev := t.PollEvent()
+		switch ev := ev.(type) {
+		case *tcell.EventKey:
+			switch ev.Key() {
+			case tcell.KeyEscape, tcell.KeyEnter:
+				close(quit)
+				return
+			case tcell.KeyDelete, tcell.KeyBackspace, tcell.KeyBackspace2:
+				t.Keyword.Delete()
+			case tcell.KeyLeft:
+				t.Keyword.MoveLeft()
+			case tcell.KeyRight:
+				t.Keyword.MoveRight()
+			case tcell.KeyRune:
+				t.Keyword.Input(ev.Rune())
+			}
+			data := FuzzyFind(string(t.Keyword.Text), mapData)
+			t.Clear()
+			t.Output(data)
+			t.Sync()
+		case *tcell.EventResize:
+			t.Sync()
+		}
+	}
+}
+
 func in(el int, array []int) bool {
 	for _, ar := range array {
 		if ar == el {

@@ -6,8 +6,6 @@ import (
 	"log"
 	"os"
 
-	"github.com/gdamore/tcell"
-
 	"gopkg.in/yaml.v2"
 )
 
@@ -71,33 +69,7 @@ func main() {
 	data := FuzzyFind(string(t.Keyword.Text), mapData)
 	t.Output(data)
 
-	go func() {
-		for {
-			ev := t.PollEvent()
-			switch ev := ev.(type) {
-			case *tcell.EventKey:
-				switch ev.Key() {
-				case tcell.KeyEscape, tcell.KeyEnter:
-					close(quit)
-					return
-				case tcell.KeyDelete, tcell.KeyBackspace, tcell.KeyBackspace2:
-					t.Keyword.Delete()
-				case tcell.KeyLeft:
-					t.Keyword.MoveLeft()
-				case tcell.KeyRight:
-					t.Keyword.MoveRight()
-				case tcell.KeyRune:
-					t.Keyword.Input(ev.Rune())
-				}
-				data = FuzzyFind(string(t.Keyword.Text), mapData)
-				t.Clear()
-				t.Output(data)
-				t.Sync()
-			case *tcell.EventResize:
-				t.Sync()
-			}
-		}
-	}()
+	go t.SetKeymap(quit)
 
 	<-quit
 
