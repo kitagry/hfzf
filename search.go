@@ -1,6 +1,9 @@
 package main
 
-import "log"
+import (
+	"log"
+	"strconv"
+)
 
 // FuzzyFind except data which is not near by keyword.
 // If parent data is near, the child data is not excepted.
@@ -32,6 +35,10 @@ func FuzzyFind(keyword string, data interface{}) interface{} {
 	case int:
 		if wordsScore(string(d), keyword) >= threshold {
 			return string(d)
+		}
+	case bool:
+		if wordsScore(strconv.FormatBool(d), keyword) >= threshold {
+			return strconv.FormatBool(d)
 		}
 	case []interface{}:
 		var tmpData []interface{}
