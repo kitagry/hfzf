@@ -76,6 +76,7 @@ func main() {
 	t.Fini()
 
 	encoder := yaml.NewEncoder(os.Stdout)
+	data := FuzzyFind(string(t.Keyword.Text), mapData)
 	switch dat := data.(type) {
 	case []interface{}:
 		for _, d := range dat {

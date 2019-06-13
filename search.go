@@ -29,6 +29,10 @@ func FuzzyFind(keyword string, data interface{}) interface{} {
 		if wordsScore(d, keyword) >= threshold {
 			return d
 		}
+	case int:
+		if wordsScore(string(d), keyword) >= threshold {
+			return string(d)
+		}
 	case []interface{}:
 		var tmpData []interface{}
 		for _, el := range d {
