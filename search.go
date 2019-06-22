@@ -60,7 +60,7 @@ func FuzzyFind(keyword string, data interface{}) interface{} {
 			return tmpData
 		}
 	default:
-		log.Println(d)
+		log.Printf("FuzzyFind method is not supported for %s \n", d)
 	}
 	return nil
 }
